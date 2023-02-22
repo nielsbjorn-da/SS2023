@@ -9,6 +9,7 @@ import sys
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from secret_data import encryption_key, secret
+import secrets
 
 
 def test_systems_security(base_url):
@@ -87,9 +88,9 @@ def splitCookie(cookie: bytes, blockSize: int):
     return iv, ciphertext
 
 
-def full_attack():
+def full_attack(url):
     # Contact server for cookie (IV:CT)
-    url = 'http://localhost:5000/'
+    #url = 'http://localhost:5000/'
     response = requests.get(url)
     text = response.text
     print(text)
@@ -131,22 +132,75 @@ def full_attack():
         iv = ciphertextBlock
         # break
 
-    return result, other
 
+    return unpad(result, 16).decode(), other
+    
+def cbc_encrypt(input_secret):
+    plaintext = f"{input_secret} plain CBC is not secure!".encode()
+    print("Byte length plaintext:", len(plaintext))
+    padded_plain = pad(plaintext, 16)
+    padding_length = len(padded_plain) - len(plaintext)
+    print("Padding length:", padding_length)
+
+    print("padded", padded_plain)
+    
+    url = 'http://localhost:5000/'
+
+    current_cipher_block = secrets.token_bytes(16)
+    full_ciphertext = current_cipher_block
+    for plain_byte_number in range(0, len(padded_plain), 16):
+        print("plain byte:", plain_byte_number)
+        previous_cipher_block = secrets.token_bytes(16)
+
+        start_byte = -(16+(plain_byte_number))
+        end_byte = -plain_byte_number
+        #print("Start, end byte", start_byte, end_byte)
+
+        current_plain_block = padded_plain[start_byte:]
+        if plain_byte_number > 0:
+            current_plain_block = padded_plain[start_byte:end_byte]
+
+
+        print("current plain:", current_plain_block)
+        decrypted_block = single_block_attack(16, current_cipher_block, url)
+        for byte in range(15, -1, -1):
+            for candidate in range(256):
+                if decrypted_block[byte] ^ candidate == current_plain_block[byte]:
+                    temp = bytearray(previous_cipher_block)
+                    temp[byte] = candidate
+                    previous_cipher_block = bytes(temp)
+                    break
+        #print("cipher block", current_cipher_block)
+        '''
+        aes = AES.new(encryption_key, AES.MODE_CBC, iv=previous_cipher_block)
+        # decrypt the ciphertext
+        temp_plain = aes.decrypt(full_ciphertext)
+        print("\nplaintext so far", temp_plain)
+        print()'''
+        full_ciphertext = previous_cipher_block + full_ciphertext
+        current_cipher_block = previous_cipher_block
+    
+    res = requests.get(f'{url}/quote/', cookies={'authtoken': full_ciphertext.hex()})
+    print("res", res.text)
+    return res
+
+
+
+def full_attack_plus_encrypt(url):
+
+    plain = f'You never figure out that "{secret}". :)'
+    decrypted_plain, _ = full_attack(url)
+    print("Plain:", decrypted_plain)
+    secret = decrypted_plain[27:-5]
+    print(secret)
+    
+    cbc_encrypt(secret)
+    print("Secret:", secret)
+    
+
+    
 
 if __name__ == '__main__':
-    result, other = full_attack()
-    print("Result before", result)
-    url = 'http://localhost:5000'
-    res = requests.get(f'{url}/quote/', cookies={'authtoken': result.hex()})
-    print(f'[+] done:\n{res.text}')
-    # plaintext = unpad(result, AES.block_size)
-    # print("Recovered plaintext:", plaintext)
-    # print("Decoded:", b64decode(plaintext).decode('ascii'))
-
-    '''
-    if len(sys.argv) != 2:
-        print(f'usage: {sys.argv[0]} <base url>', file=sys.stderr)
-        exit(1)
-    test_systems_security(sys.argv[1])
-    '''
+    url = 'http://localhost:5000/'
+    full_attack_plus_encrypt(url)
+    
