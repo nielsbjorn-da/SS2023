@@ -64,9 +64,9 @@ def get_12_and_quote(url):
     s3 = s3.to_bytes(math.ceil(s3.bit_length() / 8.0), "big")
     #print("s3",s3)
     j3 = json.dumps({'msg': m3.hex(), 'signature': s3.hex()})
-    custom_cookie3 = json_to_cookie(j3)
+    custom_cookie = json_to_cookie(j3)
 
-    res = requests.get(url + "/grade", cookies={'grade':custom_cookie3})
+    res = requests.get(url + "/grade", cookies={'grade':custom_cookie})
     print(res.text)
 
 if __name__ == '__main__':
