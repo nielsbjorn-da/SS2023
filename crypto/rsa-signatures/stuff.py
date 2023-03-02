@@ -4,12 +4,14 @@ import json
 import math
 from fractions import Fraction
 
+verifyFlag = False
+
 def sign_message(url, message: str):
-    request = requests.get(url=url+"/sign_random_document_for_students/" + message.encode().hex())
+    request = requests.get(url=url+"/sign_random_document_for_students/" + message.encode().hex(), verify=verifyFlag)
     return request.text
 
 def get_public_key(url):
-    return json.loads(requests.get(url+"/pk").text)
+    return json.loads(requests.get(url+"/pk", verify=verifyFlag).text)
 
 def json_to_cookie(j: str) -> str:
     """Encode json data in a cookie-friendly way using base64."""
@@ -48,11 +50,11 @@ def get_12_and_quote(url):
     print("y*x", Fraction(y)*Fraction(x) % N)
     x_msg = x.to_bytes(math.ceil(x.bit_length() / 8.0), "big")
     y_msg = y.to_bytes(math.ceil(y.bit_length() / 8.0), "big")
-    request = requests.get(url=url+"/sign_random_document_for_students/" + x_msg.hex())
+    request = requests.get(url=url+"/sign_random_document_for_students/" + x_msg.hex(), verify=verifyFlag)
     print(request.text)
     x_msg, x_sign = extract_msg_signature(request.text)
 
-    request = requests.get(url=url+"/sign_random_document_for_students/" + y_msg.hex())
+    request = requests.get(url=url+"/sign_random_document_for_students/" + y_msg.hex(), verify=verifyFlag)
     #print(request.text)
     y_msg, y_sign = extract_msg_signature(request.text)
 
@@ -66,9 +68,14 @@ def get_12_and_quote(url):
     j3 = json.dumps({'msg': m3.hex(), 'signature': s3.hex()})
     custom_cookie = json_to_cookie(j3)
 
-    res = requests.get(url + "/grade", cookies={'grade':custom_cookie})
+    res = requests.get(url + "/grade", cookies={'grade':custom_cookie}, verify=verifyFlag)
+    print(res.text)
+    res = requests.get(url + "/quote", cookies={'grade':custom_cookie}, verify=verifyFlag)
     print(res.text)
 
 if __name__ == '__main__':
     url = 'http://localhost:5000'
+    url = 'https://cbc-rsa.syssec.dk:8001'
     get_12_and_quote(url)
+    #req = requests.get(url + "/pk", verify=verifyFlag)
+    #print(req.text)
