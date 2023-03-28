@@ -13,12 +13,17 @@ def decrypt(ciphertext: bytes):
     return plaintext
 
 if __name__ == '__main__':
-    HOST = socket.gethostbyname(socket.gethostname())
-    #HOST = "localhost"
+    # find own IP address
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    HOST = s.getsockname()[0]
+    s.close()
+    
+    #listen to packets to own address
     s = socket.socket(socket.AF_INET,socket.SOCK_RAW,socket.IPPROTO_ICMP)
     s.bind((HOST, 0))
     s.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
-    print("IP address: ", HOST)
+    print("IP address: ", s.getsockname()[0])
     while True:
         data, addr = s.recvfrom(1024)
         print("\nReceived packet from ", addr)

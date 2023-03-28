@@ -1,5 +1,4 @@
 import sys
-from ping3 import ping
 import socket
 import struct
 import os
