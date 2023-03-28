@@ -3,7 +3,7 @@ import struct
 from Crypto.Cipher import AES
 from secrets import secret_key
 
-ICMP_TIME_FORMAT = "!d"  # d=double
+ICMP_TIME_FORMAT = "!d"  
 
 def decrypt(ciphertext: bytes):
     nonce = ciphertext[:16]
@@ -13,7 +13,7 @@ def decrypt(ciphertext: bytes):
     return plaintext
 
 if __name__ == '__main__':
-    # find own IP address
+    # find own correct IP address
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     HOST = s.getsockname()[0]
@@ -31,7 +31,7 @@ if __name__ == '__main__':
         #https://stackoverflow.com/questions/8245344/python-icmp-socket-server-not-tcp-udp
         type, code, checksum, p_id, sequence = struct.unpack('bbHHh', icmp_header)
         print("ICMP header: type: [" + str(type) + "] code: [" + str(code) + "] checksum: [" + str(checksum) + "] p_id: [" + str(p_id) + "] sequence: [" + str(sequence) + "]")
-        #print(data[28:])
-        plaintext = decrypt(data[28:])
-        print("Message received:", plaintext)
-        #print(data[28:].decode())
+        payload = data[28:]
+        plaintext = decrypt(payload)
+        print("Message received:", plaintext.decode())
+        

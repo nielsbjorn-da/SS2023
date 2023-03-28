@@ -80,7 +80,6 @@ if __name__ == '__main__':
     print("IP address: ", HOST)
     while True:
         message = input("\nWrite a message: ")
-        print(message)
         c = encrypt(message)
         print("Encrypted:", c)
         icmp(HOST, message=c)
